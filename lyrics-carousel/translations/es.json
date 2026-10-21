@@ -1,4 +1,24 @@
 {
+  "accent": "Color de la línea activa",
+  "accent_blue": "azul",
+  "accent_custom": "custom",
+  "accent_cyan": "cian",
+  "accent_green": "verde",
+  "accent_magenta": "magenta",
+  "accent_primary": "primario",
+  "accent_red": "rojo",
+  "accent_yellow": "amarillo",
+  "active_scale": "Tamaño de la línea activa",
+  "anchor": "Posición de la ventana",
+  "anchor_bottom_center": "inf centro",
+  "anchor_bottom_left": "inf izq",
+  "anchor_bottom_right": "inf der",
+  "anchor_center": "centro",
+  "anchor_left_center": "izq centro",
+  "anchor_right_center": "der centro",
+  "anchor_top_center": "sup centro",
+  "anchor_top_left": "sup izq",
+  "anchor_top_right": "sup der",
   "close": "Cerrar",
   "direction": "Sentido",
   "down": "abajo",
@@ -7,23 +27,50 @@
   "footer": "Barra de tiempo",
   "ghost": "Transiciones suaves",
   "header": "Cabecera (título / artista)",
-  "hint": "Los cambios se aplican en caliente. La tipografía necesita reiniciar la ventana.",
+  "height": "Alto",
+  "hint": "Los cambios se aplican en caliente. En modo texto la tipografía reinicia la ventana.",
   "hints": "Atajos de teclado",
+  "image_only_fonts": "Solo en modo imagen (proporcionales):",
   "karaoke": "Efecto karaoke",
   "launch": "Abrir el carrusel",
   "launch_failed": "No se pudo abrir la terminal.",
   "marker": "Marca de la línea activa",
+  "mode_image": "imagen",
+  "mode_text": "texto",
   "open_settings": "Abrir ajustes",
+  "render_mode": "Renderizado",
   "section_display": "Presentación",
   "section_font": "Tipografía",
+  "section_lyrics": "Letra",
+  "section_window": "Ventana",
   "settings": {
+    "accent": {
+      "description": "El color primario sigue al fondo de pantalla; el resto son colores ANSI del tema.",
+      "label": "Color de la línea activa",
+      "primary": "Primario",
+      "green": "Verde",
+      "yellow": "Amarillo",
+      "blue": "Azul",
+      "magenta": "Magenta",
+      "cyan": "Cian",
+      "red": "Rojo",
+      "custom": "Personalizado"
+    },
+    "active_scale": {
+      "description": "Multiplicador de tamaño de la línea que se está cantando (solo modo imagen).",
+      "label": "Tamaño de la línea activa"
+    },
     "anchor": {
       "description": "Dónde se abre la ventana: center, top-left, bottom-right...",
-      "label": "Posición"
+      "label": "Posición de la ventana"
     },
     "animation_ms": {
       "description": "Duración del desplazamiento entre líneas, en milisegundos. 0 = instantáneo.",
       "label": "Transición"
+    },
+    "custom_color": {
+      "description": "Color hexadecimal (#rrggbb) cuando el acento es «custom».",
+      "label": "Color personalizado"
     },
     "direction": {
       "description": "Abajo: las letras entran por arriba. Arriba: las letras entran por abajo.",
@@ -32,15 +79,15 @@
       "up": "Arriba"
     },
     "equalizer": {
-      "description": "Muestra las barras animadas en la esquina superior derecha.",
+      "description": "Muestra las barras animadas.",
       "label": "Visualizador de sonido"
     },
     "font_family": {
-      "description": "Fuente usada por la ventana de kitty, p. ej. Departure Mono, Nothing Font (5x7) o ttyclock.",
+      "description": "Fuente de la letra. En modo imagen admite cualquier fuente; en modo texto kitty solo acepta monoespaciadas.",
       "label": "Tipografía"
     },
     "font_size": {
-      "description": "Tamaño en píxeles de la fuente de la terminal.",
+      "description": "Tamaño en píxeles de la letra.",
       "label": "Tamaño de letra"
     },
     "footer": {
@@ -48,7 +95,7 @@
       "label": "Barra de tiempo"
     },
     "ghost": {
-      "description": "Atenúa ligeramente el bloque mientras se mueve para un acabado más suave.",
+      "description": "Atenúa el bloque mientras se mueve para un acabado más suave.",
       "label": "Transiciones suaves"
     },
     "glyph": {
@@ -79,9 +126,23 @@
       "description": "Desplaza la letra en milisegundos para afinar la sincronía.",
       "label": "Desfase de la letra"
     },
+    "render_mode": {
+      "description": "Texto: lo dibuja la terminal. Imagen: se dibuja con Pillow, permite otros tamaños de letra y cualquier tipografía.",
+      "label": "Modo de renderizado",
+      "image": "Imagen",
+      "text": "Texto"
+    },
     "spacing": {
-      "description": "Filas en blanco entre letras (1 = compacto, 2 = aireado).",
+      "description": "Filas en blanco entre letras (modo texto).",
       "label": "Separación entre líneas"
+    },
+    "visible_above": {
+      "description": "Cuántos renglones se muestran por encima de la línea activa.",
+      "label": "Renglones visibles arriba"
+    },
+    "visible_below": {
+      "description": "Cuántos renglones se muestran por debajo de la línea activa.",
+      "label": "Renglones visibles abajo"
     },
     "width": {
       "description": "Ancho de la ventana de terminal en píxeles.",
@@ -91,5 +152,9 @@
   "subtitle": "No está sonando nada",
   "title": "Carrusel de letras",
   "tooltip": "Carrusel de letras",
-  "up": "arriba"
+  "up": "arriba",
+  "visible_above": "Renglones arriba",
+  "visible_below": "Renglones abajo",
+  "width": "Ancho",
+  "write_failed": "No se pudo guardar el ajuste."
 }
