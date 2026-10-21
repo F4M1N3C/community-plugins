@@ -11,6 +11,11 @@
 
 local PANEL_ID = "faminec/notes-sync:panel"
 
+-- `render` se usa en onSendCurrent, que está por encima de su definición.
+-- En Luau un `local` solo existe desde su declaración, así que se declara
+-- aquí: si no, esas llamadas caen en un global sin valor (nil).
+local render
+
 local sync = {}
 local busy = false
 
@@ -160,8 +165,6 @@ local function onOpenSettings()
 end
 
 -- ------------------------------------------------------------------ render
-
-local render
 
 local function body()
   local s = readSync()
