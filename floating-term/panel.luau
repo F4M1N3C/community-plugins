@@ -47,6 +47,8 @@ local state = {
   layouts = {},
   store = nil,
   windows = {},
+  clients = {},
+  classNames = {},
   editing = false,
   editTarget = nil,
   editSession = 0,
@@ -347,6 +349,28 @@ end
 
 -- ------------------------------------------------------------- miniaturas --
 
+-- `hyprctl clients` devuelve las ventanas de la más alta a la más baja, así que
+-- se puede saber si otra ventana tapa a la del widget. Si está tapada, la
+-- captura mostraría otra cosa y es mejor no capturar.
+local function isMostlyCovered(clients, index, rect)
+  local covered = 0
+  for position = 1, index - 1 do
+    local other = clients[position]
+    local overlapX = math.min(rect.x + rect.w, other.x + other.w) - math.max(rect.x, other.x)
+    local overlapY = math.min(rect.y + rect.h, other.y + other.h) - math.max(rect.y, other.y)
+    if overlapX > 0 and overlapY > 0 then
+      covered = covered + (overlapX * overlapY)
+    end
+  end
+  local area = rect.w * rect.h
+  if area <= 0 then
+    return true
+  end
+  -- Cualquier solape relevante hace que la captura no sea fiel, así que con
+  -- un 2 % ya se considera tapada.
+  return (covered / area) > 0.02
+end
+
 captureThumbs = function()
   if cfg.cardPreview == "mock" then
     return
@@ -355,18 +379,27 @@ captureThumbs = function()
     return
   end
 
+  local clients = state.clients or {}
   local entries = {}
-  for _, name in ipairs(widgetNames()) do
-    local window = state.windows[name]
-    if window ~= nil and window.w > 0 and window.h > 0 then
-      table.insert(entries, {
-        name = name,
-        output = window.monitor.name,
-        x = window.x,
-        y = window.y,
-        w = window.w,
-        h = window.h,
-      })
+  for index, client in ipairs(clients) do
+    local name = state.classNames[client.class]
+    if name ~= nil and client.w > 0 and client.h > 0 then
+      local window = state.windows[name]
+      if window ~= nil and not isMostlyCovered(clients, index, {
+        x = client.x,
+        y = client.y,
+        w = client.w,
+        h = client.h,
+      }) then
+        table.insert(entries, {
+          name = name,
+          output = window.monitor.name,
+          x = window.x,
+          y = window.y,
+          w = window.w,
+          h = window.h,
+        })
+      end
     end
   end
 
@@ -399,6 +432,8 @@ refreshWindows = function(callback)
         return map[class]
       end)
 
+      state.clients = clients
+      state.classNames = map
       state.windows = {}
       for _, window in ipairs(windows) do
         if window.name ~= nil then
@@ -443,6 +478,12 @@ launch = function(name, opts)
     state.launching[class] = nil
     if opts.onDone ~= nil then
       opts.onDone()
+      return
+    end
+    -- `close_on_launch` cierra el panel al abrir una terminal (salvo que la
+    -- acción sea por lotes, como "abrir todos").
+    if cfg.closeOnLaunch and not opts.keepOpen then
+      panel.close()
       return
     end
     if doRefresh ~= false then
@@ -552,6 +593,7 @@ openAll = function()
         end
         launch(name, {
           quiet = true,
+          keepOpen = true,
           onDone = function()
             nextWidget()
           end,
@@ -578,6 +620,45 @@ closeAllWindows = function()
 end
 
 -- ------------------------------------------------------------- edición --
+
+-- Aplica los cambios de un widget (los usa el formulario del panel y el IPC).
+local function applyWidget(name, command, layout)
+  name = util.trim(name)
+  command = util.trim(command)
+  layout = util.trim(layout)
+
+  if name == "" then
+    return false, tr("need_name")
+  end
+
+  if state.store == nil then
+    loadWidgets()
+  end
+
+  storeLib.upsert(state.store, name, command ~= "" and command or nil, layout ~= "" and layout or nil)
+  local saved, err = storeLib.save(state.store)
+  if not saved then
+    return false, tr("save_failed", { detail = tostring(err or "") })
+  end
+
+  loadWidgets()
+  return true, nil
+end
+
+-- Borra un widget (los usa el panel y el IPC).
+local function removeWidget(name)
+  if state.store == nil then
+    loadWidgets()
+  end
+
+  storeLib.remove(state.store, name)
+  local saved, err = storeLib.save(state.store)
+  if not saved then
+    return false, tr("save_failed", { detail = tostring(err or "") })
+  end
+  loadWidgets()
+  return true, nil
+end
 
 startEditing = function(name)
   state.editing = true
@@ -607,28 +688,25 @@ saveForm = function()
 
   local target = state.editTarget
   if target ~= nil and target ~= name then
-    storeLib.remove(state.store, target)
+    removeWidget(target)
   end
-  storeLib.upsert(state.store, name, command ~= "" and command or nil, layout ~= "" and layout or nil)
 
-  local saved, err = storeLib.save(state.store)
-  if not saved then
-    noctalia.notifyError(tr("title"), tr("save_failed", { detail = tostring(err or "") }))
+  local applied, err = applyWidget(name, command, layout)
+  if not applied then
+    noctalia.notifyError(tr("title"), err)
     return
   end
 
   state.editing = false
   state.editTarget = nil
   state.form = { name = "", command = "", layout = "" }
-  loadWidgets()
   render()
 end
 
 deleteWidget = function(name)
-  storeLib.remove(state.store, name)
-  local saved, err = storeLib.save(state.store)
-  if not saved then
-    noctalia.notifyError(tr("title"), tr("save_failed", { detail = tostring(err or "") }))
+  local removed, err = removeWidget(name)
+  if not removed then
+    noctalia.notifyError(tr("title"), err)
     return
   end
 
@@ -640,7 +718,6 @@ deleteWidget = function(name)
     end)
   end
 
-  loadWidgets()
   render()
 end
 
@@ -1014,6 +1091,33 @@ function onIpc(event, payload)
     rotateWindows()
   elseif event == "close-all" then
     closeAllWindows()
+  elseif event == "add" then
+    -- "nombre|comando|posición"
+    loadConfig()
+    loadWidgets()
+    local parts = {}
+    for part in tostring(payload or ""):gmatch("[^|]+") do
+      parts[#parts + 1] = part
+    end
+    local applied, err = applyWidget(parts[1] or "", parts[2] or "", parts[3] or "")
+    if not applied then
+      noctalia.notifyError(tr("title"), err)
+      return
+    end
+    if state.open then
+      render()
+    end
+  elseif event == "remove" then
+    loadConfig()
+    loadWidgets()
+    local removed, err = removeWidget(tostring(payload or ""))
+    if not removed then
+      noctalia.notifyError(tr("title"), err)
+      return
+    end
+    if state.open then
+      render()
+    end
   elseif event == "refresh" then
     loadConfig()
     loadWidgets()
